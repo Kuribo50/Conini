@@ -1,0 +1,602 @@
+@import "leaflet/dist/leaflet.css";
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600&family=DM+Sans:wght@200;300;400&family=Nunito:wght@400;600;700;800&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --pink: #ffb3c6;
+  --pink2: #ffd6e0;
+  --pink3: #ffe8ef;
+  --green: #b5ead7;
+  --green2: #d4f5e9;
+  --green3: #eafaf3;
+  --yellow: #fde89a;
+  --yellow2: #fff4c2;
+  --lav: #e2d4f0;
+  --lav2: #f1eafb;
+  --peach: #ffd8b1;
+  --peach2: #fff0e0;
+  --white: #fffdf9;
+  --dark: #3a2540;
+  --mid: #6b4778;
+  --soft: #8a6fa0;
+  /* Easings */
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --bounce: cubic-bezier(0.68, -0.55, 0.27, 1.55);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  overflow-y: scroll;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: "DM Sans", sans-serif;
+  font-weight: 300;
+  background: var(--white);
+  color: var(--dark);
+  cursor: none;
+}
+
+/* ── CURSOR ── */
+.cursor {
+  position: fixed;
+  width: 10px;
+  height: 10px;
+  background: var(--pink);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 99999;
+  transform: translate(-50%, -50%);
+  transition:
+    width 0.2s,
+    height 0.2s,
+    background 0.3s;
+  mix-blend-mode: multiply;
+}
+.cursor-ring {
+  position: fixed;
+  width: 34px;
+  height: 34px;
+  border: 1.5px solid var(--pink);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 99998;
+  transform: translate(-50%, -50%);
+  transition: all 0.15s ease;
+  opacity: 0.5;
+}
+
+/* ── PAGES ── */
+.page {
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── NAV DOTS ── */
+.nav-dots {
+  position: fixed;
+  right: 1.8rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  z-index: 200;
+}
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(58, 37, 64, 0.3);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.dot.active {
+  background: var(--pink);
+  border-color: var(--pink);
+  transform: scale(1.35);
+  box-shadow: 0 0 8px rgba(255, 179, 198, 0.6);
+}
+
+/* ── SECTION TAGS ── */
+.tag {
+  font-size: 0.65rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--soft);
+  margin-bottom: 0.7rem;
+}
+
+.display {
+  font-family: "Cormorant Garamond", serif;
+  line-height: 1.05;
+}
+
+/* ── PETAL CANVAS ── */
+#petals {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ── KEYFRAMES ── */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes floatY {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-14px);
+  }
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes heartBeat {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.3);
+  }
+  60% {
+    transform: scale(0.9);
+  }
+}
+@keyframes shimmerBg {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+@keyframes confettiFall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(110vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.88);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes lineGrow {
+  0%,
+  100% {
+    transform: scaleY(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+.anim-fadeup {
+  animation: fadeUp 0.8s both;
+}
+.anim-float {
+  animation: floatY 4s ease-in-out infinite;
+}
+.anim-heart {
+  animation: heartBeat 1.8s ease-in-out infinite;
+}
+
+/* transition reveal – más suave con spring easing */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.9s var(--smooth),
+    transform 0.9s var(--smooth);
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.reveal-scale {
+  opacity: 0;
+  transform: scale(0.9) translateY(14px);
+  transition:
+    opacity 0.85s var(--smooth),
+    transform 0.85s var(--spring);
+}
+.reveal-scale.visible {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+/* ── AC / CAT INTERACTIVE ELEMENTS ── */
+
+/* Sticker que aparece al dar click al gato */
+@keyframes stickerPop {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(-20deg);
+  }
+  65% {
+    transform: scale(1.2) rotate(6deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+@keyframes stickerFloat {
+  0%,
+  100% {
+    transform: translateY(0) rotate(var(--sr, 0deg));
+  }
+  50% {
+    transform: translateY(-8px) rotate(var(--sr, 0deg));
+  }
+}
+@keyframes catBounce {
+  0%,
+  100% {
+    transform: scale(1) translateY(0);
+  }
+  40% {
+    transform: scale(1.15) translateY(-10px);
+  }
+  70% {
+    transform: scale(0.95) translateY(2px);
+  }
+}
+@keyframes catWiggle {
+  0%,
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+  20% {
+    transform: rotate(-8deg) scale(1.05);
+  }
+  40% {
+    transform: rotate(8deg) scale(1.05);
+  }
+  60% {
+    transform: rotate(-5deg) scale(1.02);
+  }
+  80% {
+    transform: rotate(5deg) scale(1.02);
+  }
+}
+@keyframes bubblePop {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0) translateY(6px);
+  }
+  70% {
+    transform: translateX(-50%) scale(1.06) translateY(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1) translateY(0);
+  }
+}
+@keyframes acFloat {
+  0%,
+  100% {
+    transform: translateY(0) rotate(2deg);
+  }
+  50% {
+    transform: translateY(-18px) rotate(-3deg);
+  }
+}
+@keyframes leafSway {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-3deg);
+  }
+  50% {
+    transform: translateY(-12px) rotate(4deg);
+  }
+}
+@keyframes bellRing {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  20% {
+    transform: rotate(-15deg);
+  }
+  40% {
+    transform: rotate(15deg);
+  }
+  60% {
+    transform: rotate(-8deg);
+  }
+  80% {
+    transform: rotate(8deg);
+  }
+}
+@keyframes popIn {
+  0% {
+    opacity: 0;
+    transform: scale(0) translateY(20px);
+  }
+  70% {
+    transform: scale(1.08) translateY(-4px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+@keyframes nibble {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(0.93) translateY(2px);
+  }
+  65% {
+    transform: scale(1.07);
+  }
+}
+@keyframes pulseSoft {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 179, 198, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(255, 179, 198, 0);
+  }
+}
+
+/* ── AC BOTTOM NAVIGATION ── */
+.ac-nav {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.3rem;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1.5px solid rgba(255, 179, 198, 0.35);
+  border-radius: 999px;
+  padding: 0.45rem 0.6rem;
+  box-shadow:
+    0 8px 32px rgba(155, 114, 207, 0.18),
+    0 1px 0 rgba(255, 255, 255, 0.9) inset;
+  z-index: 300;
+}
+.ac-nav-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  padding: 0.4rem 0.55rem;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background 0.25s ease,
+    transform 0.3s var(--spring);
+  min-width: 44px;
+}
+.ac-nav-btn:hover {
+  background: rgba(255, 179, 198, 0.2);
+  transform: translateY(-5px) scale(1.08);
+}
+.ac-nav-btn.active {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 179, 198, 0.45),
+    rgba(226, 212, 240, 0.5)
+  );
+  transform: translateY(-6px) scale(1.12);
+  box-shadow: 0 5px 18px rgba(255, 179, 198, 0.35);
+}
+.ac-nav-btn.active .ac-nav-icon {
+  animation: nibble 0.5s var(--spring);
+}
+.ac-nav-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+  display: block;
+}
+.ac-nav-label {
+  font-size: 0.42rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #b07aaa;
+  font-family: "Nunito", "DM Sans", sans-serif;
+  font-weight: 700;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  white-space: nowrap;
+}
+.ac-nav-btn:hover .ac-nav-label,
+.ac-nav-btn.active .ac-nav-label {
+  opacity: 1;
+}
+
+/* ── CAT WIDGET ── */
+.cat-widget {
+  position: fixed;
+  bottom: 5rem;
+  left: 1.5rem;
+  z-index: 400;
+  cursor: pointer;
+  user-select: none;
+}
+.cat-face {
+  width: 62px;
+  height: 62px;
+  background: linear-gradient(135deg, #fff8fb, #fffdf5);
+  border-radius: 50%;
+  border: 2px solid rgba(255, 179, 198, 0.5);
+  box-shadow: 0 4px 18px rgba(255, 179, 198, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.1rem;
+  transition:
+    transform 0.2s var(--spring),
+    box-shadow 0.2s ease;
+  animation:
+    floatY 3.5s ease-in-out infinite,
+    pulseSoft 3s ease-in-out infinite;
+}
+.cat-widget:hover .cat-face {
+  transform: scale(1.12);
+  box-shadow: 0 8px 28px rgba(255, 179, 198, 0.5);
+}
+.cat-widget:active .cat-face {
+  transform: scale(0.93);
+}
+.cat-label {
+  text-align: center;
+  margin-top: 0.28rem;
+  font-size: 0.5rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #b07aaa;
+  font-family: "Nunito", sans-serif;
+  font-weight: 700;
+}
+.cat-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: linear-gradient(135deg, #ffb3c6, #9b72cf);
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-size: 0.58rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  border: 2px solid white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  animation: popIn 0.3s var(--spring) both;
+  font-family: "Nunito", sans-serif;
+}
+.cat-bubble {
+  position: absolute;
+  bottom: calc(100% + 0.4rem);
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  border: 2px solid #ffd6e0;
+  border-radius: 1.1rem 1.1rem 1.1rem 0.3rem;
+  padding: 0.3rem 0.85rem;
+  font-size: 0.82rem;
+  white-space: nowrap;
+  animation: bubblePop 0.3s var(--spring) both;
+  box-shadow: 0 4px 16px rgba(255, 179, 198, 0.3);
+  color: #a06ec9;
+  font-family: "Nunito", sans-serif;
+  font-weight: 600;
+}
+
+/* ── AC DECORATION ITEMS ── */
+.ac-item {
+  pointer-events: none;
+  position: absolute;
+  animation: acFloat 5s ease-in-out infinite;
+}
+.ac-leaf {
+  pointer-events: none;
+  position: absolute;
+  animation: leafSway 4s ease-in-out infinite;
+}
+
+/* ── STICKERS ON SCREEN ── */
+.sticker-on-screen {
+  position: fixed;
+  pointer-events: none;
+  z-index: 500;
+  animation:
+    stickerPop 0.4s var(--spring) both,
+    stickerFloat 4s 1s ease-in-out infinite;
+  font-size: 1.7rem;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.12));
+}
+
+/* ── AC GRASS TOP DIVIDER ── */
+.ac-grass {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 24px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.ac-grass::before {
+  content: "";
+  display: block;
+  width: 200%;
+  height: 24px;
+  background-image: radial-gradient(
+    ellipse 10px 14px at 10px 14px,
+    #b5ead7 100%,
+    transparent 100%
+  );
+  background-size: 20px 14px;
+  background-repeat: repeat-x;
+  background-position: 0 0;
+  animation: grassWave 3s ease-in-out infinite;
+}
+@keyframes grassWave {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-20px);
+  }
+}
