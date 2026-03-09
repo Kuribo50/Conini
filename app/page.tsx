@@ -13,7 +13,7 @@ import CatWidget from "./components/CatWidget";
 const PAGES = ["p1", "p2", "p3", "p4", "p5", "p6"];
 const NAV_ITEMS = [
   { icon: "🌸", label: "Inicio" },
-  { icon: "📖", label: "Historia" },
+  { icon: "📖", label: "Lugares visitados" },
   { icon: "📷", label: "Fotos" },
   { icon: "💌", label: "Razones" },
   { icon: "✉️", label: "Carta" },
@@ -22,8 +22,10 @@ const NAV_ITEMS = [
 
 export default function Home() {
   const [active, setActive] = useState(0);
+  const [navVisible, setNavVisible] = useState(true);
   const cursorRef = useRef<HTMLDivElement>(null);
   const ringRef = useRef<HTMLDivElement>(null);
+  const lastScrollY = useRef(0);
 
   /* cursor */
   useEffect(() => {
@@ -90,6 +92,20 @@ export default function Home() {
     document.getElementById(PAGES[i])?.scrollIntoView({ behavior: "smooth" });
   };
 
+  /* ocultar nav al bajar, mostrar al subir */
+  useEffect(() => {
+    const onScroll = () => {
+      const y = window.scrollY;
+      const diff = y - lastScrollY.current;
+      if (Math.abs(diff) > 4) {
+        setNavVisible(diff < 0 || y < 60);
+        lastScrollY.current = y;
+      }
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
     <>
       <div className="cursor" ref={cursorRef} />
@@ -105,6 +121,10 @@ export default function Home() {
         className="ac-nav"
         role="navigation"
         aria-label="Navegación de páginas"
+        style={{
+          transform: navVisible ? "translateY(0)" : "translateY(110%)",
+          transition: "transform .3s cubic-bezier(.4,0,.2,1)",
+        }}
       >
         {NAV_ITEMS.map((item, i) => (
           <button
