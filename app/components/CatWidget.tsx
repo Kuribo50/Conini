@@ -106,7 +106,6 @@ interface TrailDot {
 export default function CatWidget() {
   const [stickers, setStickers] = useState<Sticker[]>([]);
   const [particles, setParticles] = useState<Particle[]>([]);
-  const [trail, setTrail] = useState<TrailDot[]>([]);
   const [clickCount, setClickCount] = useState(0);
   const [showBubble, setShowBubble] = useState(false);
   const [mood, setMood] = useState(0);
@@ -115,7 +114,10 @@ export default function CatWidget() {
   const [sparkleOn, setSparkleOn] = useState(false);
 
   const bubbleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const trailRef = useRef<number>(0);
+  const trailCanvasRef = useRef<HTMLCanvasElement>(null);
+  const trailDotsRef = useRef<
+    { x: number; y: number; color: string; age: number }[]
+  >([]);
 
   // Spring physics for the cat button
   const scaleS = useSpring(1, { stiffness: 380, damping: 14 });
@@ -148,37 +150,59 @@ export default function CatWidget() {
     return () => clearInterval(iv);
   }, [isHappy]);
 
-  // Cursor trail
+  // Cursor trail — canvas puro, sin re-renders
   useEffect(() => {
-    let frame: number;
-    const onMove = (e: MouseEvent) => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => {
-        setTrail((prev) => {
-          const dot: TrailDot = {
-            id: Date.now() + Math.random(),
-            x: e.clientX,
-            y: e.clientY,
-            color: PASTEL[Math.floor(Math.random() * PASTEL.length)],
-            age: 0,
-          };
-          return [...prev.slice(-20), dot];
-        });
+    const canvas = trailCanvasRef.current;
+    if (!canvas) return;
+    const resize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    resize();
+    window.addEventListener("resize", resize);
+    let raf: number;
+    const draw = () => {
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        raf = requestAnimationFrame(draw);
+        return;
+      }
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      trailDotsRef.current = trailDotsRef.current.filter((d) => d.age < 1);
+      trailDotsRef.current.forEach((d, i) => {
+        d.age += 0.06;
+        const r = 3 + i * 0.4;
+        ctx.globalAlpha = (1 - d.age) * 0.45;
+        ctx.fillStyle = d.color;
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, r, 0, Math.PI * 2);
+        ctx.fill();
       });
+      raf = requestAnimationFrame(draw);
+    };
+    draw();
+    const onMove = (e: MouseEvent) => {
+      trailDotsRef.current = [
+        ...trailDotsRef.current.slice(-12),
+        {
+          x: e.clientX,
+          y: e.clientY,
+          color: PASTEL[Math.floor(Math.random() * PASTEL.length)],
+          age: 0,
+        },
+      ];
     };
     window.addEventListener("mousemove", onMove, { passive: true });
-    return () => window.removeEventListener("mousemove", onMove);
+    return () => {
+      window.removeEventListener("resize", resize);
+      window.removeEventListener("mousemove", onMove);
+      cancelAnimationFrame(raf);
+    };
   }, []);
 
-  // Fade trail
-  useEffect(() => {
-    clearTimeout(trailRef.current);
-    trailRef.current = window.setTimeout(() => setTrail([]), 600);
-  }, [trail]);
-
   const spawnParticles = useCallback((cx: number, cy: number) => {
-    const ps: Particle[] = Array.from({ length: 20 }, (_, i) => {
-      const angle = (i / 20) * Math.PI * 2 + Math.random() * 0.4;
+    const ps: Particle[] = Array.from({ length: 8 }, (_, i) => {
+      const angle = (i / 8) * Math.PI * 2 + Math.random() * 0.4;
       const speed = 55 + Math.random() * 130;
       return {
         id: Date.now() + i + Math.random(),
@@ -283,26 +307,16 @@ export default function CatWidget() {
         }
       `}</style>
 
-      {/* ── CURSOR TRAIL ── */}
-      {trail.map((dot, i) => (
-        <div
-          key={dot.id}
-          style={{
-            position: "fixed",
-            left: dot.x,
-            top: dot.y,
-            width: `${5 + i * 0.5}px`,
-            height: `${5 + i * 0.5}px`,
-            background: dot.color,
-            borderRadius: "50%",
-            transform: "translate(-50%,-50%)",
-            pointerEvents: "none",
-            zIndex: 9000,
-            opacity: (i / trail.length) * 0.5,
-            animation: "cwTrailFade .6s ease forwards",
-          }}
-        />
-      ))}
+      {/* ── CURSOR TRAIL (canvas, sin re-renders) ── */}
+      <canvas
+        ref={trailCanvasRef}
+        style={{
+          position: "fixed",
+          inset: 0,
+          pointerEvents: "none",
+          zIndex: 9000,
+        }}
+      />
 
       {/* ── BURST PARTICLES ── */}
       {particles.map((p) => (

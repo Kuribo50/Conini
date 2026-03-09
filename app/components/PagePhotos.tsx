@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface Photo {
   src: string;
@@ -154,10 +154,21 @@ const PHOTOS: Photo[] = [
   },
 ];
 
-function PhotoCell({ p, onOpen }: { p: Photo; onOpen: () => void }) {
+function PhotoCell({
+  p,
+  onOpen,
+  isMobile,
+}: {
+  p: Photo;
+  onOpen: () => void;
+  isMobile: boolean;
+}) {
   const [hovered, setHovered] = useState(false);
   const [imgErr, setImgErr] = useState(false);
   const isCenter = p.src === "/foto17.jpg";
+
+  const mobileCol = isCenter ? "1 / 3" : "auto";
+  const mobileRow = "auto";
 
   return (
     <div
@@ -165,8 +176,9 @@ function PhotoCell({ p, onOpen }: { p: Photo; onOpen: () => void }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        gridColumn: p.col,
-        gridRow: p.row,
+        gridColumn: isMobile ? mobileCol : p.col,
+        gridRow: isMobile ? mobileRow : p.row,
+        aspectRatio: isMobile ? (isCenter ? "2/1" : "1/1") : undefined,
         borderRadius: isCenter ? "20px" : "10px",
         overflow: "hidden",
         position: "relative",
@@ -342,6 +354,14 @@ function Lightbox({ p, onClose }: { p: Photo; onClose: () => void }) {
 
 export default function PagePhotos() {
   const [open, setOpen] = useState<Photo | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   return (
     <section
@@ -403,16 +423,21 @@ export default function PagePhotos() {
         <div
           style={{
             width: "100%",
-            maxWidth: "1440px",
+            maxWidth: isMobile ? "100%" : "1440px",
             display: "grid",
-            gridTemplateColumns: "repeat(6, 1fr)",
-            gridTemplateRows: "repeat(4, minmax(1fr, 1fr))",
-            gap: "8px",
-            height: "min(calc(100vh - 110px), 880px)",
+            gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(6, 1fr)",
+            gridTemplateRows: isMobile ? "auto" : "repeat(4, minmax(1fr, 1fr))",
+            gap: isMobile ? "6px" : "8px",
+            height: isMobile ? "auto" : "min(calc(100vh - 110px), 880px)",
           }}
         >
           {PHOTOS.map((p) => (
-            <PhotoCell key={p.src} p={p} onOpen={() => setOpen(p)} />
+            <PhotoCell
+              key={p.src}
+              p={p}
+              onOpen={() => setOpen(p)}
+              isMobile={isMobile}
+            />
           ))}
         </div>
       </div>
