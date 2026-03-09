@@ -395,7 +395,7 @@ body {
   position: fixed;
   bottom: 1.5rem;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translateX(-50%) translateY(0);
   display: flex;
   gap: 0.3rem;
   background: rgba(255, 255, 255, 0.88);
@@ -408,6 +408,10 @@ body {
     0 8px 32px rgba(155, 114, 207, 0.18),
     0 1px 0 rgba(255, 255, 255, 0.9) inset;
   z-index: 300;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.ac-nav.nav-hidden {
+  transform: translateX(-50%) translateY(calc(100% + 2rem));
 }
 .ac-nav-btn {
   display: flex;

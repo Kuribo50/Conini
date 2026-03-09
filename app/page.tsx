@@ -22,9 +22,10 @@ const NAV_ITEMS = [
 
 export default function Home() {
   const [active, setActive] = useState(0);
-  const [navVisible, setNavVisible] = useState(true);
   const cursorRef = useRef<HTMLDivElement>(null);
   const ringRef = useRef<HTMLDivElement>(null);
+  const navRef = useRef<HTMLElement>(null);
+  const catWrapRef = useRef<HTMLDivElement>(null);
   const lastScrollY = useRef(0);
 
   /* cursor */
@@ -92,13 +93,21 @@ export default function Home() {
     document.getElementById(PAGES[i])?.scrollIntoView({ behavior: "smooth" });
   };
 
-  /* ocultar nav al bajar, mostrar al subir */
+  /* ocultar nav y gato al bajar, mostrar al subir */
   useEffect(() => {
     const onScroll = () => {
       const y = window.scrollY;
       const diff = y - lastScrollY.current;
       if (Math.abs(diff) > 4) {
-        setNavVisible(diff < 0 || y < 60);
+        const hide = diff > 0 && y > 60;
+        navRef.current?.classList.toggle("nav-hidden", hide);
+        if (catWrapRef.current) {
+          catWrapRef.current.style.opacity = hide ? "0" : "1";
+          catWrapRef.current.style.transform = hide
+            ? "translateY(20px)"
+            : "translateY(0)";
+          catWrapRef.current.style.pointerEvents = hide ? "none" : "auto";
+        }
         lastScrollY.current = y;
       }
     };
@@ -114,17 +123,19 @@ export default function Home() {
       <PetalCanvas />
 
       {/* Gatito interactivo + stickers */}
-      <CatWidget />
+      <div
+        ref={catWrapRef}
+        style={{ transition: "opacity 0.3s ease, transform 0.3s ease" }}
+      >
+        <CatWidget />
+      </div>
 
       {/* Navegación estilo Animal Crossing */}
       <nav
+        ref={navRef}
         className="ac-nav"
         role="navigation"
         aria-label="Navegación de páginas"
-        style={{
-          transform: navVisible ? "translateY(0)" : "translateY(110%)",
-          transition: "transform .3s cubic-bezier(.4,0,.2,1)",
-        }}
       >
         {NAV_ITEMS.map((item, i) => (
           <button
